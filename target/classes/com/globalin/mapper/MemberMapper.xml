@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.globalin.mapper.MemberMapper">
+<!-- MemberVO 가 여러개의 AuthVO를 가지고있기 때문 -->
+<resultMap type="com.globalin.domain.MemberVO" id="memberMap">
+	<id property="userid" column="userid"/>
+	<result property="userid" column="userid"/>
+	<result property="userpw" column="userpw"/>
+	<result property="userName" column="userName"/>
+	<result property="regDate" column="regDate"/>
+	<result property="updateDate" column="updateDate"/>
+	<collection property="authList" resultMap="authMap"></collection>
+</resultMap>
+
+
+	<!-- AuthoVO 도 resultMap으로 등록 -->
+	<resultMap type="com.globalin.domain.AuthVO" id="authMap">
+		<result property="userid" column="userid"/>
+		<result property="auth" column="auth"/>
+	
+	</resultMap>
+	<select id="read" resultMap="memberMap">
+	SELECT
+		mem.userid, userpw, username, regdate, updatedate, auth
+	FROM tbl_member mem LEFT OUTER JOIN tbl_member_auth auth
+		on mem.userid = auth.userid
+	WHERE mem.userid = #{userid}
+	</select>
+</mapper>

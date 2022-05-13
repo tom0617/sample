@@ -1,0 +1,317 @@
+우리가 작성할 Controller
+BoardController
+작성해야할 기능 목록
+전체목록요청 / board/list GET
+등록처리 / board/register/post
+조회 / board/get Get
+삭제/ board / remove Post
+수정 / board/ modify Post
+
+페이징 처리
+페이징처리를 하려면 sql을 변경해야되는데 필요한 파라미터가 뭐뭐가 있을까 생각
+페이지번호(pageNum) , 한페이지당 몇개의 데이터를 보여줄지(amount) =10
+1페이지 1~10
+2페이지 11~20
+
+
+
+==> 클래스로 관리를 합니다.
+
+<![CDATA[ SQL 구문]]>
+SQL구문안에 특수문자가 틀어갈 경우 XML파일에서 잘못 인식하는 경우를 막기위해 사용하는 처리방법
+(Character Data 줄임말) sql  구문안에 부등호같은 특수문자가 들어갈때 사용
+xml 태그만들때 <select> where bno > 0 이런거 뒤에부등호 컴터가 태그로 오해할까봐 사용
+
+화면 밑에 페이지 번호를 표시, 페이지 번호를 클릭할수 있게
+< 1 2 3 4 5 >
+
+페이지 처리할때 필요한 정보들
+현재 페이지 번호(pageNum)
+이전과 다음으로 이동가능한 링크를 표시(prev, next)
+화면에서 보여지는 페이지의 시작, 마지막(start, end)
+
+사용자가 5페이지를 보고있다. ==> 1~10 페이지
+사용자가 19페이지를 보고 있다. ==> 11~20 페이지
+< 1 2 3 4 5 6 7 8 9 10 > start : 1 / end : 10
+< 11 12 13 14 15 16 17 18 19 20 > start : 11 / end : 20
+
+페이지 끝번호 계산
+endpage: (int)(Math.ceil(현재페이지번호 / 10.0)) * 10;
+	현재페이지가 1페이지 : Math.ceil(1/10.0 = 0.1) = 1 * 10 = 10
+	현재 페이지가 10페이지 : Math.ceil(10/10.0 = 1) = 1 * 10 = 10
+	현재 페이지가 11페이지 : Math.ceil(11/10.0 = 1.1) = 2 * 10 = 20
+페이지 기작번호
+페이지 끝번호 - 9
+startpage = endpage - 9 
+사실,끝 번호는 전체 데이터 수(total)의 영향을 받는다.
+진짜 끝 번호를 realend
+realend : (int)Math.ceil((total * 1.0) / amount(페이지당 개수)
+reqlend < endPage
+페이지 끝번호를 realend로 쓴다
+
+이전페이지 / 다음페이지
+이전페이지 : 현재 페이지 - 1 (시작 페이지 번호가 1보다 큰경우만)
+다음 페이지 : 현재 페이지 + 1 (realend보다 작을때만)
+
+검색기능 : sql
+제목 / 내용 / 작성자
+
+검색결과가 여러개가 나올수 있다.
+여러개가 나오면 ==> 만약 결과가 200만개면 페이지처리 필요
+
+제목 + 내용
+
+Mybatis를 통해 검색 sql을 작성
+
+검색조건이 상황에 따라 다르다
+사용자가 제목검색을 한경우 where title like '%키워드%'
+사용자가 내용검색을 한경우 where content like '%키워드%'
+사용자가 제목 + 내용 검색을 한경우....
+
+Mybatis의 동적 sql(jstl 태그랑 비슷함)
+if, choose, trim, foreach
+if는 test라는 속성과 함께 특정한 조건이 true가 되었을대
+포함된 sql을 사용하고자 할때 작성한다.
+예를 들어서 우리가 단일 항목으로 제목검색을 하는 상황 / 내용/ 작성자
+검색 조건이 T면 제목검색을 할것이다
+검색조건이 C면 내용검색을 할것이다
+검색조건이  W면 작성자 검색을 할거시다 검색조건 : type
+<if test="type == 'T'.toString()">
+	(title like '%'||#{keyword}||'%')
+</if>
+<if test="type == 'C'.toString()">
+	(title like '%'||#{keyword}||'%')
+</if>
+
+choose 는 여러 상황들중 하나의 상황에서만 동작합니다. if-else , jstl의<choose>
+<choose>
+	<when test="type == 'T'.toString()">
+		(title like '%'||#{keyword}||'%')
+	</when>
+	<when test="type == 'C'.toString()">
+		(title like '%'||#{keyword}||'%')
+	</when>
+	<otherwise>
+		...위에서 아무 조건도 해당되지 않았을때..
+	</otherwise>
+</choose>
+
+sql작성을 하는데 bno라는 값이 null 이 아니면 where 절을 추가해서 bno 값을 비교하고싶다.
+select * from tbl_board
+<where>
+	<if test="bno != null">
+		bno = #{bno}
+	</if>
+</where>
+
+태그 안쪽 sql문이 생성되면 앞에 where 구문이 붙고, 그렇지 않으면 생성 되지 않는다.
+bno 값이 존재하는 경우 : select * from tbl_board where bno = xxx;
+bno 값이 null 인경우 : select * from tbl_board;
+
+where 절안에 and 나 or 로 조건을 추가하고 싶을 경우
+where bno = xxx and rownum <= 10;
+<trim> 태그
+
+<trim prefix="and">
+	사용하고 싶은 sql
+	//rownum <= 10
+</trim>
+prefix, suffix, 속성 사용가능
+
+<foreach> List, 배열, 맵 등을 이용해서 반복 처리할때 사용하는 태그
+
+</foreach>
+and sql
+
+getListWithPaging ==> 검색 결과 리스트
+(검색 조건이 없는 경우는 1페이지씩 가져온다)
+(검색 조건이 있는 경우 페잊수 계산을 해야하는데 이때 페이지수는 총 페이지수가 아니라
+검색 결과에 대한 페이지수를 계산)
+200건
+제목에 "새로"가 포함된 게시물은 80건
+페이지수는 한페이지에 10개씩 이라고하면 8페이지
+
+
+트랜잭션 관리
+
+ACID
+
+Atomicity 원자성
+	하나의 트랜잭션은 모두 하나의 단위로 처리
+	a는 성공했지만 b는 실패할경우 전체가 실패한거스로 간주하고 원래상태로 되돌린다
+	a와 b의 실행 결과를 동일한 결과로 한다.
+	두개다 모두 성공하던지
+	두개다 모두 실패하던지
+
+Consistency 일관성
+	트랜잭션이 성공했다면 데이터베이스의 모든 데이터는 일관성을 유지해야한다.
+	트랜잭션으로 처리된 데이터와 다른데이터 사이에 전혀 차이가 없어야한다.
+	
+Isolation 격리성
+	트랜잭션이 처리되는 중간에 외부에서 간섭할수없다.
+	
+Durability 영속성
+	트랜잭션이 성공적으로 처리가 되면 그 결과는 영속적으로 보관되어야 한다.
+	
+정규화 : 중복된 데이터를 제거해서 데이터 저장의 효율을 올린다.
+
+person
+이름, 주민번호, 주소, 성별, ....
+홍길동 00-000 서울 	  남
+
+student
+이름, 학번, 주민번호, 주소, 성별, ...
+홍길동 07 		00-000	서울	남
+
+student
+학번, 주민번호
+07, 00-000....
+
+테이블의 조인을 이용해서 주민번호 컬럼(외래키)을 이용해서 그사람의 다른 정보를 가져온다.
+다른 테이블에 있는 정보를 가져온다.
+where student.주민번호 = person.주민번호
+정규화가 진행될수록 테이블은 점점더 순순한 형태가 되어간다(꼭 필요한 정보만 저장하게된다)
+
+where person_name.주민번호 = person_address.주민번호 = person_gender.주민번호
+
+테이블을 조인한다??컴퓨터가 조인이 필요한 테이블을 검색
+컴퓨터가 할일이 너무 많아짐 ==> 시간도 오래걸리고, 성능이 저하된다.
+
+다시 테이블을 합쳐서 하나의 테이블에서 검색할수있도록 (조인 횟수를 줄인다.)
+반정규화(어느정도 중복을 허용한다. 대신 조인, 서브쿼리 이용횟수를 줄인다.)
+
+스프링에서 트랜잭션 기능을 제공
+spring-tx,springjdbc,spring
+
+트랜잭션 기능을 사용하기위해 필요했던 설정들
+pom.xml
+	spring-tx, spring-jdbc, ojdbc
+	+ aop
+	의존성 추가
+스프링 설정파일
+	db 관련 설정 빈(dataSource , sqlSessionFactory..)
+	namespace 가서 aop, tx 체크
+	transactionManager 빈추가,
+	<tx:annotation-driven /> : 트랜잭션 설정을 어노테이션으로 하겠다
+	<aop:aspectj-sutoproxy> : aop설정을 어노테이션으로하겠다
+우리가 사용할 메소드(트랜잭션 처리하고 싶은 메소드) 위에 @Transactional
+
+
+
+Rest방식으로 전환
+옛날 방식에서는 우리가 만드는 데이터의 소비자가 웹브라우저 (컴퓨터)
+스마트폰(모바일)
+서버의 데이터를 소비하는 주체가 웹브라우저라는 특정한 어플리케이션으로 제한적
+--> 모바일기기 많아지면서 모바일의 앱이나 웹도 서버에서 제공하는 데이터를 소비하게 되었다
+
+과거의 서버의 데이터 제공대상 : 웹브라우저
+최근의 경우 : 웹브라우저 + 수많은 다양한 기기들
+
+스마트폰에서는 app이라고 불리는 고유한 어플리케이션을 사용하여 데이터를 소비
+스마트폰에서 보이는 화면은 더이상 html이 아니다(자신만의 방법으로 화면을 제공)
+
+REST
+하나의 uri 는 하나의 고유한 resource을 대표하도록 설계
+uri : 당신이 원하는곳의 주소는 여기입니다
+url : 이곳에 가면 당신이 원하는것을 찾을수있습니다	
+"/board/123" 이주소는 123번 게시물을 위한 유일한 주소
++GET / POST 데이터를 전달하는 방식까지 추가
+
+REST = URI + GET/POST/PUT/DELETE/....
+
+REST방식이 되면 가장 먼저 기억해야하는것 : 서버의 변화
+서버가 전송하는 것이 순수한 데이터가 된다.
+기존의 컨트롤러에서 데이터를 담아서 jsp와 같은 view로 전달하는 방식이 아니다.
+
+서버가 순수하게 데이터만 전달한다 --> 많이사용하는 방식
+JSON 방식으로 데이터를 전달한다.
+XML방식(옛날)
+프로젝트에서 json방식을 사용하기위해 라이브러리 추가가 필요하다
+	작업				전송방식			URI
+Create (등록)			post		/board/new
+Read	(조회)		get			/board/{id}
+Update	(수정)		put			/board/{id}
+Delete	(삭제)		Delete		/board/{id}
+
+Rest 방식을 이용해서 댓글 처리를 구현
++ Ajax
+
+댓글테이블
+create table tbl_reply(
+	rno number(10,0),
+	bno number(10,0) not null,
+	reply varchar2(1000) not null,
+	replyer varchar2(50) not null,
+	replyDate date default sysdate,
+	updateDate date default sysdate
+	);
+	
+create sequence seq_reply 
+minvalue 0
+maxvalue 99999999999999999999
+increment by 1 start with 1 cycle;
+
+alter table tbl_reply add constraint pk_reply primary key (rno);
+
+alter table tbl_reply add constraint fk_reply_board foreign key (bno)
+references tbl_board(bno);
+
+--rno를 먼저 찾고 (rno로 지정된 인덱스에서 rno를 먼저 찾고)
+--그 다음에 rno에 해당하는 bno를 찾게 됩니다.
+
+--우리가 지금 웹에서 동작하는 댓글 조회기능은
+--게시글의 bno를 먼저 찾고 rno를 찾는다.
+
+pk reply만 이용해서 댓글 검색을 하다보니 중간에 있는 다른 게시물의 댓글고 있을텐데 그 중간에있는
+다른 게시물의 댓글수가 적을때는 상관없는데 댓글많아지면 성능이슈
+
+데이터베이스가 검색하는 순서도 웹에서 댓글을 조회하는 순서같이 변경해서 성능을 올릴수있다.
+rno가 아니라 bno를 기준으로 정렬해놓은 인덱스 생성
+create index 인덱스이름 on 테이블이름(컬럼1,컬럼2)
+()안에들어가는 순서는 인덱스의 기준을생성할순서
+
+
+게시물 정보에 댓글수 포함하도록 변경
+댓글을 추가하면 tbl_reply 테이블에 insert 하고, tbl_board테이블에는 댓글의 수를 의미하는 replyCnt라는 컬럼을 추가해서
+댓글의수를 update합니다
+
+파일 업로드
+
+첨부파일 설정은 프로젝트에 web.xml 이 있는 경우에는 web.xmo에서 처리해준다
+스프링 사용시 MultipartResolver라는 타입의 객체를 빈으로 등록해서 사용
+web과 관련된 설정이므로 servlet-context.xml 을 이용해서 빈으로 등록
+
+파일 업로드시 고려해야하는 점들
+
+동일한 이름으로 파일이 업로드 되었을때 기존 파일이 사라진다. (덮어쓰기 해버림)
+네이버 메일에서 파일 업로드 하려고했더니 zip이랑 exe이런 파일 업로드 막아버림
+첨부파일 공격에 대비하기 위해 업로드 파일의 확장자를 제한
+파일의 크기가 너무 큰경우 사전처리	
+
+파일이름 중복처리 방법
+하나는 시간을 파일이름앞에 붙여서 저장 (국룰)
+또는 년/월/일 단위로 폴더구조를 만들어서 저장
+UUID 벙용고유식별자(고유성이 보장되는 ID)
+
+이미지 크기가 너무 큰경우 화면에 그대로 사용할 경우 많은 데이터를 소비해야한다.
+모바일에서 웹페이지를 여는데 웹페이지에 엄청큰 이미지 파일이 포함되어있다면
+이미지 파일의 크기만큼 남은 데이터를 소모
+특별한 경우가 아니면 이미지 크기를 줄여서 썸네일처리가 필요하다.
+썸네일 처리는 우리가 직접하지 않고 라이브러리를 가져와서 사용
+
+접근제한설정
+
+스프링 시큐리티와 jdbc를 같이 이용하는 방법
+1) 스프링 시큐리티에서 지정한 형식으로 테이블을 생성해서사용
+2) 우리가 작성한 데이터베이스를 이용하는 방식
+
+인증/ 권한을 위해테이블을 생성
+tbl_member : 회원정보
+tbl_member_auth : 회원의 권한
+패스워드를 그냥 그대로 사용했는데 인코딩까지 해봄
+암호화처리
+
+데이터베이스에 저장된 회원정보를 통해 인증을 할건데 필요한 쿼리 2개
+사용자 정보를 인증하는데 필요한 쿼리
+그 사용자의 권한을 확인하는데 필요한 쿼리
+id가 admin

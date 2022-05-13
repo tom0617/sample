@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.globalin.mapper.BoardMapper">
+<!-- <sql> 태그로 자주 이용하는 sql문을 저장해놓을수있다 -->
+<sql id = "criteria">
+<trim prefix ="(" suffix=") And " prefixOverrides="OR">
+	<!-- foreach의 collection 속성은 list,배열,map 같은 순회가능한 자료구조 -->
+		<foreach item="type" collection="typeArr">
+		<trim prefix ="OR">
+			<choose>
+				<when test="type == 'T'.toString()">
+					title like '%'||#{keyword}||'%'
+				</when>
+				<when test="type == 'C'.toString()">
+					content like '%'||#{keyword}||'%'
+				</when>
+				<when test="type == 'W'.toString()">
+					writer like '%'||#{keyword}||'%'
+				</when>
+			</choose>
+			</trim>
+		</foreach>
+	</trim>
+	</sql>
+	
+	<select id="getList" resultType="com.globalin.domain.BoardVO">
+		select * from tbl_board where
+		bno > 0
+	</select>
+
+	<insert id="insert">
+		insert into tbl_board (bno,title, content, writer)
+		values
+		(seq_board.nextval,#{title}, #{content},#{writer})
+	</insert>
+
+	<insert id="insertSelectKey">
+		<selectKey keyProperty="bno" order="BEFORE" resultType="int">
+			select seq_board.nextval from dual
+		</selectKey><!-- 이츠더 허세쓰 -->
+		insert into tbl_board (bno,title, content, writer) values
+		(#{bno},#{title}, #{content},#{writer})
+	</insert>
+
+	<delete id="delete">
+		delete from tbl_board where bno=#{bno}
+	</delete>
+
+	<update id="update">
+		update tbl_board set
+		title=#{title},content=#{content},writer=#{writer},updateDate =
+		sysdate where bno=#{bno}
+	</update>
+
+	<select id="read" resultType="com.globalin.domain.BoardVO">
+		select * from tbl_board where
+		bno=#{bno}
+	</select>
+
+	<select id="getListWithPaging"
+		resultType="com.globalin.domain.BoardVO">
+	<![CDATA[
+	select
+		bno, title, content, writer, regdate, updatedate, replycnt
+	from
+		(select /*+INDEX_DESC(tbl_board pk_board) */
+			rownum rn, bno, title, content, writer, regdate, updatedate, replycnt
+		from
+			tbl_board
+		where 
+	]]>		
+	<!-- 검색 조건에 따라 동적 SQL이 삽입됩니다. -->	
+	<!--(title like '%제목%' or content like '%내용%')-->
+	<!-- prefixOverrider : 실행될 쿼리의 <trim>문 안에 맨 앞에 해당하는 문자열이 있으면 자동으로 지워줌 -->
+	
+	
+	<trim prefix ="(" suffix=") And " prefixOverrides="OR">
+	<!-- foreach의 collection 속성은 list,배열,map 같은 순회가능한 자료구조 -->
+		<foreach item="type" collection="typeArr">
+		<trim prefix ="OR">
+			<choose>
+				<when test="type == 'T'.toString()">
+					title like '%'||#{keyword}||'%'
+				</when>
+				<when test="type == 'C'.toString()">
+					content like '%'||#{keyword}||'%'
+				</when>
+				<when test="type == 'W'.toString()">
+					writer like '%'||#{keyword}||'%'
+				</when>
+			</choose>
+			</trim>
+		</foreach>
+	</trim>
+	
+	<![CDATA[
+			rownum <= #{pageNum} * #{amount})
+	where
+		rn > (#{pageNum}-1) * #{amount}
+	]]>
+	</select>
+	<select id="getTotalCount" resultType="int">
+		select count(*) from tbl_board where
+		
+		<include refid="criteria"></include>
+		
+		
+		
+		
+		 bno > 0
+	
+	</select>
+	<update id="updateReplyCnt">
+		update tbl_board set replyCnt = replyCnt + #{amount} where bno = #{bno}
+	
+	</update>
+</mapper>

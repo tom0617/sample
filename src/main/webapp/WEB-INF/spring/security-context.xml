@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:security="http://www.springframework.org/schema/security"
+	xsi:schemaLocation="http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+	<!-- 스프링 시큐리티에서 제공하는 암호화 인코더를 사용하기위해 빈으로 등록 -->
+	<bean id="bycriptPasswordEncoder" class="org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder"></bean>
+	
+	<!-- UserDetailService를 구현한 클래스를 bean으로 등록 -->
+	<bean id="customUserDetailService" class="com.globalin.service.CustomUserDetailService"></bean>
+	
+	<!-- 시큐리티가 동작하기 위해서 최소한 결정 -->
+	<security:authentication-manager>
+		<security:authentication-provider user-service-ref="customUserDetailService">
+		<!-- 스프링 시큐리티 버전 5부터 password는 무조건 인코딩해서 사용해야되는데 {noop}라고 주면 나는 인코딩 안하고쓰겠다.설정 -->
+		
+			<!--<security:user-service>
+				  <security:user name="member" password="{noop}member" authorities="ROLE_MEMBER"/>
+				<security:user name="admin" password="{noop}admin" authorities="ROLE_ADMIN,ROLE_MEMBER"/>
+			</security:user-service>-->
+		<!--  	
+		<security:jdbc-user-service data-source-ref="dataSource"
+			users-by-username-query="select userid, userpw, enabled from tbl_member where userid=?"
+			authorities-by-username-query="select userid, auth from tbl_member_auth where userid=?"		
+		/>-->
+		
+		<security:password-encoder ref="bycriptPasswordEncoder"/>
+		
+		</security:authentication-provider>
+	
+	
+	
+	
+	
+	</security:authentication-manager>
+	
+	
+	
+	
+	<security:http>
+		<!-- 아무나 이용가능 -->
+		<security:intercept-url pattern="/security/all" access="permitAll"/>
+		<!--여기는 roleMember 권한이있는사람만 접근가능 -->
+		<security:intercept-url pattern="/security/member" access="hasRole('ROLE_MEMBER')"/>
+		<security:intercept-url pattern="/security/admin" access="hasRole('ROLE_ADmin')"/>  
+		
+		<!-- login-page 속성으로 내가 만든 로그인 페이지주소 -->
+		<security:form-login login-page="/loginpage"/> 
+		<security:logout logout-url="/customLogout" invalidate-session="true"/>
+		
+		
+		
+		<!-- csrf설정을 사용하지 않겠다. -->
+		<!-- <security:csrf disabled="true"></security:csrf> -->
+		<security:form-login/>
+		<!-- 접근이 거부된 페이지를 설정할때 
+			error-page로 페이지만 설정해주거나
+			ref로내가 직접 세세한 설정을 하고싶은 내용이 있을때 클래스로 작성(빈으로 등록필요)
+		
+		-->
+		<!--<security:access-denied-handler error-page="/accessError"/>-->
+		<security:access-denied-handler ref="customAccessDenied"></security:access-denied-handler>
+	
+	</security:http>
+	<bean id="customAccessDenied" class="com.globalin.security.CustomAccessDeniedHandler"></bean>
+	<!-- <bean id="customLoginSuccess" class="com.globalin.security.CustomLoginSuccessHandler"></bean>
+	 -->
+</beans>

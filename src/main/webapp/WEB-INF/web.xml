@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+	<web-app xmlns="http://xmlns.jcp.org/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/javaee 
+         http://xmlns.jcp.org/xml/ns/javaee/web-app_3_1.xsd"
+         version="3.1">
+	<!-- 프로젝트 생성시 spring legacy project방식으로 생성 legacy project 는 web.xml설정이 servlet 2.5버전 기준
+	3.1버전으로 바꿔준다 -->
+	
+	
+	
+	<!-- filter 등록(한글 인코딩) -->
+	<filter>
+		<filter-name>encoding</filter-name>
+		<filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+		<init-param>
+			<param-name>encoding</param-name>
+			<param-value>UTF-8</param-value>
+		</init-param>
+	</filter>
+	<!-- 필터를 어느 경로 또는 서블릿과 매칭시킬지 매핑을 시켜줘야 한다 -->
+	<filter-mapping>
+		<filter-name>encoding</filter-name>
+		<url-pattern>/*</url-pattern>
+	
+	</filter-mapping>
+	<!-- 스프링 시큐리티 필터 -->
+	<filter>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+	
+	</filter>
+	
+	<filter-mapping>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	
+	<!-- Spring security 설정파일 등록 -->
+
+	
+	
+	
+	<!-- The definition of the Root Spring Container shared by all Servlets and Filters -->
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/spring/root-context.xml
+		/WEB-INF/spring/security-context.xml</param-value>
+	</context-param>
+	
+	<!-- Creates the Spring Container shared by all Servlets and Filters -->
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+
+	<!-- Processes application requests -->
+	<servlet>
+		<servlet-name>appServlet</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<init-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>/WEB-INF/spring/appServlet/servlet-context.xml</param-value>
+		</init-param>
+		<load-on-startup>1</load-on-startup>
+		
+		<!-- 파일 업로드를 위한 설정 -->
+		<multipart-config>
+		<!-- 파일업로드위치 -->
+			<location>C:\\temp</location>
+			<!-- 파일업로드최대크기 -->
+			<max-file-size>20971520</max-file-size>
+			<!-- 파일업로드한번에 최대크기-->
+			<max-request-size>41943040</max-request-size>
+			<!-- 크기이상일때 메모리사용-->
+			<file-size-threshold>20971520</file-size-threshold>
+		</multipart-config>
+	</servlet>
+		
+	<servlet-mapping>
+		<servlet-name>appServlet</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+
+</web-app>
